@@ -218,21 +218,19 @@ def clean_result(n):
 
 df['amenities']=df['amenities'].apply(clean_result)
 
-# save all unique amenities from the dataset
-unique_amenities=[]
+"""### Text Mining (Ammenities Column)"""
+
+amenities=[]
 for i in range(len(df)):
     if type(df['amenities'][i])==float:
        continue
     else:
       for item in df['amenities'][i]:
-          if item not in unique_amenities:
-             unique_amenities.append(item)
-          else:
-            continue
+          amenities.append(item)
 
-# tokenize all amenities
+# tokenize all amenities and make it lowercase
 amenities_tokens=[]
-for i in unique_amenities:
+for i in amenities:
  tokens=nltk.word_tokenize(i)
  #print(tokens)
  lowercase_toekens=[]
@@ -242,14 +240,14 @@ for i in unique_amenities:
  amenities_tokens.append(lowercase_toekens)
 
  # clean up the tokens, only keep alphabets
-token_for_analysis=[]
+cleaned_token_for_analysis=[]
 for i in amenities_tokens:
    #print(i)
    cleaned_amenities_tokens=[]
    for item in i:
      if item.isalpha()==True:
         cleaned_amenities_tokens.append(item)
-   token_for_analysis.append(cleaned_amenities_tokens)
+   cleaned_token_for_analysis.append(cleaned_amenities_tokens)
 
 def display_term_frequency(n):
     flatten_list=[]
@@ -258,92 +256,211 @@ def display_term_frequency(n):
         for i in item:
           #print(i)
           flatten_list.append(i)
-    term_frequency=pd.DataFrame(FreqDist(flatten_list).most_common(),columns=['Term','Frequency'])
-    term_frequency.sort_values(by='Frequency',ascending=False,inplace=True)
+    term_frequency=pd.DataFrame(FreqDist(flatten_list).most_common(),columns=['Term','Term Frequency'])
+    term_frequency.sort_values(by='Term Frequency',ascending=False,inplace=True)
     return term_frequency
 
+# Remove rare terms
+term_frequency=display_term_frequency(cleaned_token_for_analysis)
+rare_terms_df=term_frequency['Term'][term_frequency['Term Frequency']<=10]
+rare_terms_df.reset_index(drop=True,inplace=True)
+
+rare_terms=[]
+for i in range(len(rare_terms_df)):
+   #print(rare_terms_df[i])
+   rare_terms.append(rare_terms_df[i])
+rare_terms=set(rare_terms)
+
+def prepare_tokens_for_analysis(raw_tokens,filter_list):
+    filtered_tokens=[]
+    for item in raw_tokens:
+        tokens=[]
+        for token in item:
+            if token not in filter_list:
+               tokens.append(token)
+        filtered_tokens.append(tokens)
+    return filtered_tokens
+
+token_for_analysis=prepare_tokens_for_analysis(cleaned_token_for_analysis,rare_terms)
 # identify the most commmon terms (no stop word is applied)
-# few observations at this stage, with, inch, mbps, fast should be remove from the term for analysis as it doesn't provide any meaning
 term_frequency=display_term_frequency(token_for_analysis)
-print(term_frequency.head(20))
+#print(term_frequency.head(40))
 
-# add stop word
-stop_word=set(stopwords.words('english'))
-stop_word.update(['inch','mbps','fast'])
+# # implement bigram, trigrams and four grams on original tokens to identify multi-word terms
+# # Then go through the multi-words and identify the potential stop words
 
-tokens_stopword_removed=[]
-for item in token_for_analysis:
-    tokens=[]
-    for token in item:
-        if token not in stop_word:
-           tokens.append(token)
-    tokens_stopword_removed.append(tokens)
+# multi_word_terms=[('carbon','monoxide','alarm'),('first','aid','kit'),('coffee','maker'),
+#                   ('air','conditioning'),('hair','dryer'),('fire','extinguisher'),('bed','linens'),('body','soap'),
+#                   ('extra','pillows','and','blankets'),('long','term','stays','allowed'),
+#                   ('shower','gel'),('water ','kettle'),('smoke','alarm'),('dining','table'),('wine','glasses'),
+#                   ('ceiling','fan'),('bbq','grill'),('cooking','basics'),('dedicated','workspace'),
+#                   ('cleaning','products'),('private','entrance'),('outdoor','furniture'),
+#                   ('baking','sheet'),('pets','allowed'),
+#                   # words identified in round 2
+#                   ('dishes','and','silverware'),('outdoor','dining','area'),('luggage','dropoff','allowed'),('board','games'),
+#                   # free parking and on premises are used to be two words separately, I notice all four words appears together
+#                    ('free','parking','on','premises'),('private','patio','or','balcony'),('hot','water','kettle'),
+#                   ('central','heating'),('clothing','storage','closet'),('fire','pit'),
+#                   ('central','air','conditioning'),('laundromat','nearby'),
+#                   ('ethernet','connection'),('exercise','equipment'),('indoor','fireplace'),('gas','stove'),('parking','on','premises'),
+#                   ('paid','parking'),('coffee','machine'),('free','dryer','in','unit'),('books','and','reading','material'),
+#                   ('free','washer','in','unit'),('city','skyline','view'),('available','at','extra','cost'),('free','dryer','in','building'),
+#                   ('outdoor','pool'),('mini','fridge'),('on','premises'),('hot','water'),('on','property'),('hot','tub'),
+#                   ('security','cameras'),('clothing','storage'),('private','backyard','fully','fenced'),('sun','loungers'),('drying','rack'),
+#                   ('electric','stove'),('ev','charger'),('stainless','steel','oven'),('paid','parking','on','premises'),('amazon','prime'),
+#                   ('free','street','parking'),('patio','or','balcony'),('available','during','stay'),('available','upon','request'),
+#                   ('available','all','year'),('amazon','prime','video'),('gym','in','building'),('free','driveway','parking','on','premises'),
+#                   ('clothing','storage','closet','and','dresser'),('paid','parking','off','premises'),('ping','pong','table'),
+#                   ('exterior','security','cameras','on','property'),('single','level','home'),('drying','rack','for','clothing'),
+#                   ('stainless','steel','gas','stove'),('portable','fans'),('rice','maker'),('trash','compactor'),('barbecue','utensils'),
+#                   ('stainless','steel'),('building','staff'),('drip','coffee','maker'),('standard','cable'),('single','oven'),
+#                   ('stainless','steel', 'single','oven'),('free','parking','garage','on','premises'),
+#                   ('private','outdoor','pool','available','all','year'),('shared','outdoor','pool','available','all','year'),
+#                   ('shared','gym','in','building'),('lake','access'),('garden','view'),('books','and','toys'),('record','player'),
+#                   ('bluetooth','sound','system'),('private','backyard'),('shared','pool'),('fully','fenced'),('in','building'),('hbo','max'),
+#                   ('pack','n','crib'),('noise','decibel','monitors','on','property'),('host','greets','you'),('not','fully','fenced'),
+#                   ('dryer','in','unit'),('split','type','ductless','system'),('free','washer','in','building'),('paid','dryer','in','building'),
+#                   ('paid','washer','in','building'),('shared','backyard'),('apple','tv'),('private','hot','tub'),('outdoor','kitchen'),
+#                   ('shared','patio','or','balcony'),('private','bbq','grill'),('resort','access'),('housekeeping','available','at','extra','cost'),
+#                   ('sound','system'),('cleaning','available','during','stay'),('french','press'),('game','console'),('beach','essentials'),
+#                   ('children','s','books','and','toys'),('children','s','dinnerware'),('baby','safety','gates'),('always','at','the','listing'),
+#                   ('lock','on','bedroom','door'),('standalone','high','chair','available','upon','request'),('yoga','mat'),('arcade','games'),
+#                   ('pack','n','crib','available','upon','request'),('pack','n','crib','always','at','the','listing'),('open','hours'),
+#                   ('stainless','steel','electric','stove'),('shared','backyard','fully','fenced'),('outdoor','playground'),('fire','tv'),
+#                   ('fast','wifi','mbps'),('open','specific','hours'),('tv','with','standard','cable'),('hdtv','with','amazon','prime','video'),
+#                   ('closet','and','dresser'),('hdtv','with','roku'),('wardrobe','and','dresser'),('washer','in','unit'),('hdtv','with','netflix'),
+#                   ('window','ac','unit'),('paid','pack','n','crib','available','upon','request'),('premium','cable'),('shared','outdoor','pool'),
+#                   ('outdoor','shower'),('bread','maker'),('private','backyard','not','fully','fenced'),('smoking','allowed'),('private','pool'),
+#                   ('private','hot','tub','available','all','year'),('courtyard','view'),('pocket','wifi'),('baby','bath'),('outlet','covers'),
+#                   ('folding','or','convertible'),('free','carport','on','premises'),('french','press','keurig','coffee','machine'),
+#                   ('stainless','steel','double','oven'),('coffee','maker','espresso','machine'),('drip','coffee','maker','keurig'),
+#                   ('folding','or','convertible','high','chair'),('paid','street','parking'),('free','residential','garage','on','premises'),
+#                   ('ginger','lily','farms'),('paid','street','parking','off','premises'),('available','seasonally','open','specific','hours')]
 
+# Utilize the multi-words I constructed before and the result from bigram, trigram and four gram to determine which words should
+# add into stop words list
+stop_words=set(['on', 'and','premises', 'gas', 'in', 'unit', 'building', 'at', 'extra', 'cost', 'property', 'fully', 'fenced', 'private',
+            'electric', 'stainless', 'steel', 'during', 'stay', 'upon', 'request', 'all', 'year', 'driveway', 'off', 'drip', 'single',
+            'garage', 'shared', 'outdoor', 'pack', 'n', 'french', 'press', 's', 'the', 'listing', 'always', 'keurig', 'double', 'espresso',
+            'machine', 'residential', 'ginger', 'lily', 'farms', 'folding', 'or', 'convertible', 'high','pocket','paid','free','for',
+            'age','years','old','from','am','to','pm','split','type','ductless','system','open','hours','specific','every','day','seasonally',
+            'nespresso','ages','standard','premium','street','central','nearby','indoor','dove','tesla','only','gilchrist','soames','london',
+            'collection','charcoal','mbps','decibel','level','self','standalone','samsung','entrance','shades','space','spaces','recommendations',
+            'ge','portable','a','week','days','whirlpool','induction','living','room','public','goods','heated','rooftop','inch','with','cable',
+            'aux','sonos','bosch','available','not','furniture','essentials','bluetooth','frigidaire','lg','nintendo','switch','xbox','one','lot',
+            'bose','other','terra','pure','pantene','kitchenaid','malin','goetz','thermador','by','trader','joe','various','brands','provided',
+            'kenmore','dr','bronners','bergman','kelly','monday','friday','kirkland','series','x','organic','native','suave','molton','brown',
+            'google','home','oil of olay','full size','smart','jbl','alexa','kitchen aid','travel size','galanze','brand','range','of',
+            'clothing storage','bronner'])
+
+
+
+tokens_stopword_removed=prepare_tokens_for_analysis(token_for_analysis,stop_words)
 term_frequency=display_term_frequency(tokens_stopword_removed)
-print(term_frequency.head(20))
+#print(term_frequency.head(50))
 
-# implement bigram, trigrams and four grams on original tokens to identify multi-word terms
-# multi-word terms apple tv, fire tv,body soap, hbo max, amazon prime video,bluetooth sound system
-# we know fast and mbps are related to WIFI, therefore we should add both term into stop word based on the result from bigram and trigram
+
+def produce_ngrams(token_for_analysis,ngram_value):
+      if int(ngram_value) not in [2,3,4]:
+         raise Exception("Unsupport ngram_value, ngram_value must between 2-4")
+      ngrams_list=[]
+      for i in token_for_analysis:
+          #print(i)
+          result=list(ngrams(i,int(ngram_value)))
+          words=[]
+          if int(ngram_value)==2:
+             for item in result:
+                 words.append(item[0]+' '+item[1])
+             ngrams_list.append(words)
+          elif int(ngram_value)==3:
+              for item in result:
+                  words.append(item[0]+' '+item[1]+' '+item[2])
+              ngrams_list.append(words)
+          elif int(ngram_value)==4:
+              for item in result:
+                  words.append(item[0]+' '+item[1]+' '+item[2]+' '+item[3])
+              ngrams_list.append(words)
+      return ngrams_list
+
 #bigram
-bigrams=[]
-for i in token_for_analysis:
-    #print(i)
-    result=list(ngrams(i,2))
-    words=[]
-    for item in result:
-        words.append(item[0]+' '+item[1])
-    bigrams.append(words)
-
+bigrams=produce_ngrams(tokens_stopword_removed,2)
 term_frequency=display_term_frequency(bigrams)
-print(term_frequency.head(20))
+#print(term_frequency.head(50))
 
 #trigrams
-trigrams=[]
-for i in token_for_analysis:
-    #print(i)
-    result=list(ngrams(i,3))
-    words=[]
-    for item in result:
-        words.append(item[0]+' '+item[1]+' '+item[2])
-    trigrams.append(words)
-
+trigrams=produce_ngrams(tokens_stopword_removed,3)
 term_frequency=display_term_frequency(trigrams)
-print(term_frequency.head(20))
+#print(term_frequency.head(50))
 
 #fourgrams
-fourgrams=[]
-for i in token_for_analysis:
-    #print(i)
-    result=list(ngrams(i,4))
-    words=[]
-    for item in result:
-        words.append(item[0]+' '+item[1]+' '+item[2]+' '+item[3])
-    fourgrams.append(words)
-
+fourgrams=produce_ngrams(tokens_stopword_removed,4)
 term_frequency=display_term_frequency(fourgrams)
-print(term_frequency.head(20))
+#print(term_frequency.head(50))
 
-# Identify the multi-words during tokenization
-multi_word_terms=[('air','conditioning'),('apple','tv'),('fire','tv'),('roku','tv'),('body','soap'),('amazon','prime','video'),
-                  ('bluetooth','sound','system'),('hbo','max'),('stainless','steel'),('outdoor','pool'),
-                  ('available','at','extra','cost')]
+# updated version of the multi_word terms
+multi_word_terms=[('body', 'soap'), ('children', 'books', 'toys'), ('dishes', 'silverware'), ('outlet', 'covers'), ('baking', 'sheet'),
+('clothing', 'storage'), ('fire', 'tv'), ('dvd', 'player'), ('smart', 'lock'), ('pool', 'view'), ('ev', 'charger'), ('security', 'cameras'),
+('noise', 'monitors'), ('cleaning', 'products'), ('valley', 'view'), ('lake', 'view'), ('clothing', 'storage', 'closet', 'dresser'),
+('ethernet', 'connection'), ('patio', 'balcony'), ('hot', 'water', 'kettle'), ('smoke', 'alarm'), ('children', 'playroom'), ('wine', 'glasses'),
+('cooking', 'basics'), ('closet', 'dresser'), ('drying', 'rack', 'clothing'), ('mini', 'fridge'), ('dining', 'table'), ('fire', 'extinguisher'),
+('bed', 'linens'), ('fire', 'pit'), ('dining', 'area'), ('city', 'skyline', 'view'), ('books', 'reading', 'material'), ('board', 'games'),
+('fireplace', 'guards'), ('children', 'dinnerware'), ('hdtv', 'netflix'), ('smoking', 'allowed'), ('hbo', 'max'), ('barbecue', 'utensils'),
+('stationary', 'bike'), ('river', 'view'), ('lake', 'access'), ('trash', 'compactor'), ('hot', 'tub'), ('changing', 'table'), ('window', 'ac'),
+('hdtv', 'roku'), ('amazon', 'prime'), ('drying', 'rack'), ('courtyard', 'view'), ('apple', 'tv'), ('hdtv', 'amazon', 'prime', 'video'),
+('bbq', 'grill'), ('long', 'term', 'stays', 'allowed'), ('amazon', 'prime', 'video'), ('bread', 'maker'), ('record', 'player'),
+('valet', 'parking'), ('hair', 'dryer'), ('sun', 'loungers'), ('ping', 'pong', 'table'), ('fast', 'wifi'), ('window', 'guards'),
+('arcade', 'games'), ('exterior', 'security', 'cameras'), ('bowling', 'alley'), ('workout', 'bench'), ('game', 'console'),
+('water', 'kettle'), ('garden', 'view'), ('resort', 'access'), ('mosquito', 'net'), ('shower', 'gel'), ('lock', 'bedroom', 'door'),
+('pillows', 'blankets'), ('park', 'view'), ('baby', 'safety', 'gates'), ('yoga', 'mat'), ('table', 'corner', 'guards'), ('baby', 'bath'),
+('pool', 'table'), ('mini', 'golf'), ('pets', 'allowed'), ('wardrobe', 'dresser'), ('clothing', 'storage', 'closet'),
+('luggage', 'dropoff', 'allowed'), ('baby', 'monitor'), ('movie', 'theater'), ('dedicated', 'workspace'), ('air', 'conditioning'),
+('ceiling', 'fan'), ('boat', 'slip'), ('first', 'aid', 'kit'), ('carbon', 'monoxide', 'alarm'), ('coffee', 'maker'), ('rice', 'maker'),
+('mountain', 'view'), ('hot', 'water'), ('host', 'greets', 'you'), ('exercise', 'equipment'),('golf','course','view'),('children','bikes'),
+('solar','panels'),('beach','access'),('ebike','charger'),('spa','services'),('climbing','wall'),('resort','view')
+# catch the brandname and remove it later or repeated term and standardize it later
+,('kitchen','aid'),('body','wash','body','soap'),('coffee','maker','coffee','maker','coffee','coffee'),
+('coffee','maker','coffee','maker','coffee'),('coffee','maker','coffee'),('coffee','maker','coffee','maker'),('soap','body','soap'),
+('ice','maker','refrigerator'),('convection','oven','oven'),('pool','infinity'),('full','size','refrigerator'),
+('conditioner','conditioner'),('body','soap','body','soap'),('travel','size'),('pool','pool'),('oven','oven'),('full','size'),
+('shampoo','shampoo')]
+
 mwe_tokenizer=MWETokenizer(multi_word_terms,separator=' ')
 
 multi_word_tokens=[]
-for i in token_for_analysis:
+for i in tokens_stopword_removed:
     #print(mwe_tokenizer.tokenize(i))
     multi_word_tokens.append(mwe_tokenizer.tokenize(i))
 
 term_frequency=display_term_frequency(multi_word_tokens)
-print(term_frequency.head(50))
+#print(term_frequency.head(50))
 
-# apply synonyms list on the multi-word tokens we have
-synonyms={'hdtv':'tv','apple tv':'tv','fire tv':'tv','roku tv':'tv',
+#bigram
+bigrams=produce_ngrams(multi_word_tokens,2)
+term_frequency=display_term_frequency(bigrams)
+#print(term_frequency.head(50))
+
+#trigrams
+trigrams=produce_ngrams(multi_word_tokens,3)
+term_frequency=display_term_frequency(trigrams)
+#print(term_frequency.head(50))
+
+#fourgrams
+fourgrams=produce_ngrams(multi_word_tokens,4)
+term_frequency=display_term_frequency(fourgrams)
+#print(term_frequency.head(50))
+
+# clean the tokens by standaridize them and remove stoped words that are multi-word terms
+synonyms={'hdtv':'tv','roku tv':'tv','apple tv':'streaming service','fire tv':'streaming service',
           'netflix':'streaming service','amazon prime video':'streaming service','hulu':'streaming service',
-          'roku':'streaming service','hbo max':'streaming service'}
+          'roku':'streaming service','hbo max':'streaming service','chromecast':'streaming service',
+          'body wash body soap':'body soap','coffee maker coffee maker coffee coffee':'coffee maker',
+          'coffee maker coffee maker coffee':'coffee maker','coffee maker coffee':'coffee maker',
+          'coffee maker coffee maker':'coffee maker','soap body soap':'body soap','convection oven oven':'oven',
+          'ice maker refrigerator':'refrigerator','pool infinity':'pool',
+          'full size refrigerator':'refrigerator','conditioner conditioner':'conditioner',
+          'body soap body soap':'body soap','pool pool':'pool','oven oven':'oven','shampoo shampoo':'shampoo'}
 
-multi_word_tokens_with_synonyms=[]
+multi_word_tokens_cleaned=[]
 for i in multi_word_tokens:
    #print(i)
    new_token_list=[]
@@ -354,54 +471,45 @@ for i in multi_word_tokens:
           new_token_list.append(synonyms[item])
        else:
           new_token_list.append(item)
-   multi_word_tokens_with_synonyms.append(new_token_list)
+   multi_word_tokens_cleaned.append(new_token_list)
 
-term_frequency=display_term_frequency(multi_word_tokens_with_synonyms)
+#term_frequency=display_term_frequency(multi_word_tokens_cleaned)
 #print(term_frequency.head(20))
 
-# applied the stop word
-# we should remove words such as available, standard, hours, open based on initial result
-#initial result
-# # stop_word=set(stopwords.words('english'))
-# # stop_word.update(['inch','mbps','fast'])
+multi_word_tokens_stopword_removed=prepare_tokens_for_analysis(multi_word_tokens_cleaned,stop_words)
+term_frequency=display_term_frequency(multi_word_tokens_stopword_removed)
+print(term_frequency.head(50))
 
-# multi_word_tokens_with_synonyms_stopword_removed=[]
-# for item in multi_word_tokens_with_synonyms:
-#     tokens=[]
-#     for token in item:
-#         if token not in stop_word:
-#            tokens.append(token)
-#     multi_word_tokens_with_synonyms_stopword_removed.append(tokens)
+#bigram
+bigrams=produce_ngrams(multi_word_tokens_stopword_removed,2)
+term_frequency=display_term_frequency(bigrams)
+print(term_frequency.head(50))
 
-# term_frequency=display_term_frequency(multi_word_tokens_with_synonyms_stopword_removed)
-# print(term_frequency.head(20))
+#trigrams
+trigrams=produce_ngrams(multi_word_tokens_stopword_removed,3)
+term_frequency=display_term_frequency(trigrams)
+print(term_frequency.head(50))
 
-stop_word=set(stopwords.words('english'))
-stop_word.update(['inch','mbps','fast','available','standard','hours','open'])
+#fourgrams
+fourgrams=produce_ngrams(multi_word_tokens_stopword_removed,4)
+term_frequency=display_term_frequency(fourgrams)
+print(term_frequency.head(50))
 
-multi_word_tokens_with_synonyms_stopword_removed=[]
-for item in multi_word_tokens_with_synonyms:
-    tokens=[]
-    for token in item:
-        if token not in stop_word:
-           tokens.append(token)
-    multi_word_tokens_with_synonyms_stopword_removed.append(tokens)
+"""### Plot the result"""
 
-term_frequency=display_term_frequency(multi_word_tokens_with_synonyms_stopword_removed)
-print(term_frequency.head(30))
-
+term_frequency=display_term_frequency(multi_word_tokens_stopword_removed)
 plt.figure(figsize=(12, 8))
 
 wc = WordCloud(width=1000, height=600,
                background_color='white')
-wc.generate_from_frequencies(term_frequency.set_index('Term')['Frequency'].to_dict())
+wc.generate_from_frequencies(term_frequency.set_index('Term')['Term Frequency'].to_dict())
 
 plt.imshow(wc, interpolation='bilinear')
 plt.axis('off')
 plt.show()
 
 plt.figure(figsize=(10,6))
-bars=plt.bar(term_frequency.head(10)['Term'],term_frequency.head(10)['Frequency'])
+bars=plt.bar(term_frequency.head(10)['Term'],term_frequency.head(10)['Term Frequency'])
 plt.title('Common Amentities')
 plt.xlabel('Ammentities')
 plt.ylabel("Frequency")
