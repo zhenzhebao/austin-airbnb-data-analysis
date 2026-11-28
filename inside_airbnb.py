@@ -7,9 +7,7 @@ from wordcloud import WordCloud
 
 import nltk
 nltk.download('punkt_tab')
-nltk.download('stopwords')
 nltk.download('wordnet')
-nltk.download('averaged_perceptron_tagger_eng')
 
 from nltk.corpus import stopwords
 from nltk import FreqDist
@@ -350,8 +348,10 @@ stop_words=set(['on', 'and','premises', 'gas', 'in', 'unit', 'building', 'at', '
             'aux','sonos','bosch','available','not','furniture','essentials','bluetooth','frigidaire','lg','nintendo','switch','xbox','one','lot',
             'bose','other','terra','pure','pantene','kitchenaid','malin','goetz','thermador','by','trader','joe','various','brands','provided',
             'kenmore','dr','bronners','bergman','kelly','monday','friday','kirkland','series','x','organic','native','suave','molton','brown',
-            'google','home','oil of olay','full size','smart','jbl','alexa','kitchen aid','travel size','galanze','brand','range','of',
-            'clothing storage','bronner'])
+            'google','home','oil of olay','full size','jbl','alexa','kitchen aid','travel size','galanz','brand','range','of',
+            'clothing storage','bronner','sony','olay','wii','aeg','yamaha','radiant','aesop','miele','zline','eco','viking','wolf','no',
+            'dacor','bertazzoni','generic','otc','puracy','varies','luxury','everyone','aveda','maytag','organics','vegan',
+            'tresemme','smeg','marshall','botanicals','honest'])
 
 
 
@@ -400,23 +400,23 @@ term_frequency=display_term_frequency(fourgrams)
 # updated version of the multi_word terms
 multi_word_terms=[('body', 'soap'), ('children', 'books', 'toys'), ('dishes', 'silverware'), ('outlet', 'covers'), ('baking', 'sheet'),
 ('clothing', 'storage'), ('fire', 'tv'), ('dvd', 'player'), ('smart', 'lock'), ('pool', 'view'), ('ev', 'charger'), ('security', 'cameras'),
-('noise', 'monitors'), ('cleaning', 'products'), ('valley', 'view'), ('lake', 'view'), ('clothing', 'storage', 'closet', 'dresser'),
+('noise', 'monitors'), ('cleaning', 'products'), ('valley', 'view'), ('lake', 'view'),
 ('ethernet', 'connection'), ('patio', 'balcony'), ('hot', 'water', 'kettle'), ('smoke', 'alarm'), ('children', 'playroom'), ('wine', 'glasses'),
 ('cooking', 'basics'), ('closet', 'dresser'), ('drying', 'rack', 'clothing'), ('mini', 'fridge'), ('dining', 'table'), ('fire', 'extinguisher'),
 ('bed', 'linens'), ('fire', 'pit'), ('dining', 'area'), ('city', 'skyline', 'view'), ('books', 'reading', 'material'), ('board', 'games'),
-('fireplace', 'guards'), ('children', 'dinnerware'), ('hdtv', 'netflix'), ('smoking', 'allowed'), ('hbo', 'max'), ('barbecue', 'utensils'),
+('fireplace', 'guards'), ('children', 'dinnerware'), ('smoking', 'allowed'), ('hbo', 'max'), ('barbecue', 'utensils'),
 ('stationary', 'bike'), ('river', 'view'), ('lake', 'access'), ('trash', 'compactor'), ('hot', 'tub'), ('changing', 'table'), ('window', 'ac'),
-('hdtv', 'roku'), ('amazon', 'prime'), ('drying', 'rack'), ('courtyard', 'view'), ('apple', 'tv'), ('hdtv', 'amazon', 'prime', 'video'),
+('amazon', 'prime'), ('drying', 'rack'), ('courtyard', 'view'), ('apple', 'tv'),
 ('bbq', 'grill'), ('long', 'term', 'stays', 'allowed'), ('amazon', 'prime', 'video'), ('bread', 'maker'), ('record', 'player'),
 ('valet', 'parking'), ('hair', 'dryer'), ('sun', 'loungers'), ('ping', 'pong', 'table'), ('fast', 'wifi'), ('window', 'guards'),
 ('arcade', 'games'), ('exterior', 'security', 'cameras'), ('bowling', 'alley'), ('workout', 'bench'), ('game', 'console'),
 ('water', 'kettle'), ('garden', 'view'), ('resort', 'access'), ('mosquito', 'net'), ('shower', 'gel'), ('lock', 'bedroom', 'door'),
 ('pillows', 'blankets'), ('park', 'view'), ('baby', 'safety', 'gates'), ('yoga', 'mat'), ('table', 'corner', 'guards'), ('baby', 'bath'),
-('pool', 'table'), ('mini', 'golf'), ('pets', 'allowed'), ('wardrobe', 'dresser'), ('clothing', 'storage', 'closet'),
+('pool', 'table'), ('mini', 'golf'), ('pets', 'allowed'), ('wardrobe', 'dresser'),('ironing','board'),('roku','tv'),
 ('luggage', 'dropoff', 'allowed'), ('baby', 'monitor'), ('movie', 'theater'), ('dedicated', 'workspace'), ('air', 'conditioning'),
 ('ceiling', 'fan'), ('boat', 'slip'), ('first', 'aid', 'kit'), ('carbon', 'monoxide', 'alarm'), ('coffee', 'maker'), ('rice', 'maker'),
 ('mountain', 'view'), ('hot', 'water'), ('host', 'greets', 'you'), ('exercise', 'equipment'),('golf','course','view'),('children','bikes'),
-('solar','panels'),('beach','access'),('ebike','charger'),('spa','services'),('climbing','wall'),('resort','view')
+('solar','panels'),('beach','access'),('ebike','charger'),('spa','services'),('climbing','wall'),('resort','view'),('marina','view')
 # catch the brandname and remove it later or repeated term and standardize it later
 ,('kitchen','aid'),('body','wash','body','soap'),('coffee','maker','coffee','maker','coffee','coffee'),
 ('coffee','maker','coffee','maker','coffee'),('coffee','maker','coffee'),('coffee','maker','coffee','maker'),('soap','body','soap'),
@@ -450,15 +450,38 @@ term_frequency=display_term_frequency(fourgrams)
 #print(term_frequency.head(50))
 
 # clean the tokens by standaridize them and remove stoped words that are multi-word terms
+# later on synonyms are used to categorize different items
 synonyms={'hdtv':'tv','roku tv':'tv','apple tv':'streaming service','fire tv':'streaming service',
           'netflix':'streaming service','amazon prime video':'streaming service','hulu':'streaming service',
           'roku':'streaming service','hbo max':'streaming service','chromecast':'streaming service',
-          'body wash body soap':'body soap','coffee maker coffee maker coffee coffee':'coffee maker',
-          'coffee maker coffee maker coffee':'coffee maker','coffee maker coffee':'coffee maker',
-          'coffee maker coffee maker':'coffee maker','soap body soap':'body soap','convection oven oven':'oven',
-          'ice maker refrigerator':'refrigerator','pool infinity':'pool',
-          'full size refrigerator':'refrigerator','conditioner conditioner':'conditioner',
-          'body soap body soap':'body soap','pool pool':'pool','oven oven':'oven','shampoo shampoo':'shampoo'}
+          'body wash body soap':'bathroom essentials','coffee maker coffee maker coffee coffee':'kitchen equipment',
+          'coffee maker coffee maker coffee':'kitchen equipment','coffee maker coffee':'kitchen equipment',
+          'coffee maker coffee maker':'kitchen equipment','soap body soap':'bathroom essentials','convection oven oven':'kitchen equipment',
+          'ice maker refrigerator':'kitchen equipment','pool infinity':'pool','drying rack clothing':'laundry amenities',
+          'full size refrigerator':'kitchen equipment','conditioner conditioner':'bathroom essentials','drying rack':'laundry amenities',
+          'body soap body soap':'bathroom essentials','pool pool':'pool','oven oven':'kitchen equipment','shampoo shampoo':'bathroom essentials',
+          'ethernet connection':'network connectivity','wifi':'network connectivity','hot water kettle':'kitchen equipment',
+          'refrigerator':'kitchen equipment','coffee maker':'kitchen equipment','blender':'kitchen equipment',
+          'microwave':'kitchen equipment','stove':'kitchen equipment','oven':'kitchen equipment','dishwasher':'kitchen equipment',
+          'freezer':'kitchen equipment','baking sheet':'kitchen equipment','toaster':'kitchen equipment','mini fridge':'kitchen equipment',
+          'body soap':'bathroom essentials','conditioner':'bathroom essentials','shower gel':'bathroom essentials','water kettle':'kitchen equipment',
+          'shampoo':'bathroom essentials','soap':'bathroom essentials','iron':'laundry amenities','weights':'exercise equipment',
+          'hair dryer':'bathroom essentials','window ac':'heating and cooling amenities','fast wifi':'network connectivity',
+          'workout bench':'exercise equipment','stationary bike':'exercise equipment','yoga mat':'exercise equipment',
+          'climbing wall':'exercise equipment','board games':'recreational activities','ping pong table':'recreational activities',
+          'arcade games':'recreational activities','mini golf':'recreational activities','bowling alley':'recreational activities',
+          'washer':'laundry amenities','dryer':'laundry amenities','laundromat':'laundry amenities','ironing board':'laundry amenities',
+          'children books toys':'children and baby amenities','children playroom':'children and baby amenities','bread maker':'kitchen equipment',
+          'children dinnerware':'children and baby amenities','window guards':'children and baby amenities','rice maker':'kitchen equipment',
+          'fireplace guards':'children and baby amenities','baby safety gates':'children and baby amenities','elliptical':'exercise equipment',
+          'table corner guards':'children and baby amenities','baby bath':'children and baby amenities','treadmill':'exercise equipment',
+          'baby monitor':'children and baby amenities','children bikes':'children and baby amenities','crib':'children and baby amenities',
+          'changing table':'children and baby amenities','ceiling fan':'heating and cooling amenities',
+          'heating':'heating and cooling amenities','air conditioning':'heating and cooling amenities','bed linens':'bedding amenities',
+          'pillows blankets':'bedding amenities','fans':'heating and cooling amenities','smoke alarm':'safety equipment',
+          'carbon monoxide alarm':'safety equipment','fire extinguisher':'safety equipment','first aid kit':'safety equipment',
+          'hangers':'clothing storage amenities','closet':'clothing storage amenities','closet dresser':'clothing storage amenities',
+          'wardrobe dresser':'clothing storage amenities','wardrobe':'clothing storage amenities','dresser':'clothing storage amenities'}
 
 multi_word_tokens_cleaned=[]
 for i in multi_word_tokens:
@@ -510,8 +533,8 @@ plt.show()
 
 plt.figure(figsize=(10,6))
 bars=plt.bar(term_frequency.head(10)['Term'],term_frequency.head(10)['Term Frequency'])
-plt.title('Common Amentities')
-plt.xlabel('Ammentities')
+plt.title('Common Amenities')
+plt.xlabel('Amenities')
 plt.ylabel("Frequency")
 plt.xticks(rotation=340)
 plt.bar_label(bars,padding=1)
